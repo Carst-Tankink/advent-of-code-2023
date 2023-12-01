@@ -21,13 +21,11 @@ private fun getConstructorOfDay(day: Int): Constructor<out Solution<*, *>> {
 
 private fun <I, S> solveDay(day: Int, constructor: (String) -> Solution<I, S>) {
     val dayPrefix = "/day$day/"
-    val sample = constructor("${dayPrefix}sample")
+    constructor("${dayPrefix}sample1")
+    constructor("${dayPrefix}sample2")
     val input = constructor("${dayPrefix}input")
 
-//    runSolution("Sample star 1: ") { sample.star1() }
-//    runSolution("Input star 1: ") { input.star1() }
-
-    runSolution("Sample star 2: ") { sample.star2() }
+    runSolution("Input star 1: ") { input.star1() }
     runSolution("Input star 2: ") { input.star2() }
 }
 

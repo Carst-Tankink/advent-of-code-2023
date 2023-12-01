@@ -6,9 +6,7 @@ class Trebuchet(fileName: String) : Solution<String, Int>(fileName) {
     override fun parse(line: String): String = line
 
     override fun solve2(data: List<String>): Int {
-        val numbers = data
-            .map { line -> toNumbers(line) }
-        return numbers.sum()
+        return data.map { line -> toNumbers(line) }.sum()
     }
 
     override fun solve1(data: List<String>): Int {
