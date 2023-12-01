@@ -6,14 +6,13 @@ class Trebuchet(fileName: String) : Solution<String, Int>(fileName) {
     override fun parse(line: String): String = line
 
     override fun solve2(data: List<String>): Int {
-        return data.map { line -> toNumbers(line) }.sum()
+        return data.sumOf { line -> toNumbers(line) }
     }
 
     override fun solve1(data: List<String>): Int {
         return data
-            .map { it.filter { x -> x.isDigit() } }
-            .map { it.first() + it.last().toString() }
-            .sumOf { it.toInt() }
+            .map { line -> line.filter { it.isDigit() }.map { it.digitToInt() } }
+            .sumOf { it.first() * 10 + it.last() }
     }
 
     private fun toNumbers(line: String): Int {
@@ -29,13 +28,20 @@ class Trebuchet(fileName: String) : Solution<String, Int>(fileName) {
             "nine" to 9,
         )
 
-        val numbersRegex = numbers.keys.joinToString("|", "(", "|\\d)").toRegex()
-        val reverseNumbersRegex = numbers.keys.map { it.reversed() }.joinToString("|", "(", "|\\d)").toRegex()
-        val firstMatch = numbersRegex.find(line)?.groupValues?.first()
-        val firstNumber = numbers[firstMatch] ?: firstMatch?.toInt()
+        val numbersRegex = createRegex(numbers.keys)
+        val firstMatch = numbersRegex.find(line)?.value
+        val firstNumber = numbers.getNumericValue(firstMatch!!)
 
-        val lastMatch = reverseNumbersRegex.find(line.reversed())?.groupValues?.first()?.reversed()
-        val lastNumber = numbers[lastMatch] ?: lastMatch?.toInt()
-        return firstNumber!! * 10 + lastNumber!!
+        val reverseNumbersRegex = createRegex(numbers.keys.map { it.reversed() })
+        val lastMatch = reverseNumbersRegex.find(line.reversed())?.value?.reversed()
+        val lastNumber = numbers.getNumericValue(lastMatch!!)
+
+        return firstNumber * 10 + lastNumber
+    }
+
+    private fun Map<String, Int>.getNumericValue(firstMatch: String): Int = this[firstMatch] ?: firstMatch.toInt()
+
+    private fun createRegex(words: Iterable<String>): Regex {
+        return (words.joinToString("|") + "|\\d").toRegex()
     }
 }

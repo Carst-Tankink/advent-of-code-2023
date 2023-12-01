@@ -29,7 +29,6 @@ private fun <I, S> solveDay(day: Int, constructor: (String) -> Solution<I, S>) {
     runSolution("Input star 2: ") { input.star2() }
 }
 
-@OptIn(ExperimentalTime::class)
 private fun <S> runSolution(message: String, function: () -> S) {
     var solution: S
     val time = measureTime {
