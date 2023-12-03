@@ -1,13 +1,17 @@
 package util
 
-abstract class Solution<Input, SolutionType>(fileName: String) {
-    val data: List<Input> = javaClass
-        .getResource(fileName)
-        ?.readText()
-        ?.lines()
-        ?.mapNotNull { parse(it) } ?: emptyList()
+abstract class Solution<Input, SolutionType>(fileName: String?) {
+    val data: List<Input> = if (fileName == null) {
+        emptyList()
+    } else {
+        javaClass
+            .getResource(fileName)
+            ?.readText()
+            ?.lines()
+            ?.mapNotNull { parse(it) } ?: emptyList()
+    }
 
-    val isSample = fileName.contains("sample")
+    val isSample = fileName?.contains("sample") ?: true
     fun star1(): SolutionType = solve1(data)
     fun star2(): SolutionType = solve2(data)
 
