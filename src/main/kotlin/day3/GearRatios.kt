@@ -47,6 +47,19 @@ class GearRatios(fileName: String?) : Solution<List<Char>, Int>(fileName) {
     }
 
     override fun solve2(data: List<List<Char>>): Int {
-        TODO("Not yet implemented")
+        val schematic = data.toGrid()
+        return schematic.entries
+            .filter {
+                it.value == '*'
+            }
+            .map {
+                it.key
+                    .getNeighbours(false)
+                    .filter { p -> schematic[p]?.isDigit() ?: false }
+                    .map { p -> expandToNumber(p, schematic) }
+                    .toSet()
+            }
+            .filter { it.size == 2 }
+            .sumOf { it.first().second * it.last().second }
     }
 }
