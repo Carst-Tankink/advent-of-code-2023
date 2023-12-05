@@ -154,20 +154,11 @@ fun mapSingleLine(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
             Pair(source.second, entry.second),
         )
 
-
         entry.second > source.first && entry.second <= source.second -> {
             Triple(
                 entry.first to source.first,
                 (source.first to entry.second) + line.offset,
                 null,
-            )
-        }
-
-        entry.first > source.first && entry.first < source.second -> {
-            Triple(
-                null,
-                (entry.first to source.second) + line.offset,
-                (source.second to entry.second),
             )
         }
 
