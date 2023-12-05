@@ -19,23 +19,29 @@ data class Point(val x: Long, val y: Long) {
         val allPoints = listOf(
             Point(-1, -1), Point(0, -1), Point(1, -1),
             Point(-1, 0), Point(0, 0), Point(1, 0),
-            Point(-1, 1), Point(0, 1), Point(1, 1)
+            Point(-1, 1), Point(0, 1), Point(1, 1),
         )
 
         return allPoints.map { this + it }
     }
 
     fun getNeighbours(cardinal: Boolean): List<Point> {
-        val nonCardinal = if (cardinal) emptyList() else listOf(
-            Point(-1, -1), Point(1, -1),
-            Point(-1, 1), Point(1, 1)
-        )
+        val nonCardinal = if (cardinal) {
+            emptyList()
+        } else {
+            listOf(
+                Point(-1, -1),
+                Point(1, -1),
+                Point(-1, 1),
+                Point(1, 1),
+            )
+        }
         return (
             nonCardinal + listOf(
                 Point(0, -1),
                 Point(1, 0),
                 Point(0, 1),
-                Point(-1, 0)
+                Point(-1, 0),
             )
             ).map { dir -> this + dir }
     }
@@ -52,7 +58,7 @@ data class Point3D(val x: Long, val y: Long, val z: Long) {
             Point3D(0, 1, 0),
             Point3D(0, -1, 0),
             Point3D(0, 0, 1),
-            Point3D(0, 0, -1)
+            Point3D(0, 0, -1),
         ).map { this + it }
     }
 }
@@ -76,20 +82,26 @@ class Helpers {
         fun Char.intValue() = this.code - 48
 
         fun <E> List<E>.pad(height: Int, e: E? = null): List<E?> {
-            return if (this.size == height) this else {
+            return if (this.size == height) {
+                this
+            } else {
                 (this + e).pad(height)
             }
         }
 
         fun <T> List<List<T>>.transpose(): List<List<T>> {
-            return if (this.any { it.isEmpty() }) emptyList() else {
+            return if (this.any { it.isEmpty() }) {
+                emptyList()
+            } else {
                 listOf(this.map { it[0] }) + this.map { it.drop(1) }.transpose()
             }
         }
 
         fun toDecimal(digits: List<Int>, base: Int): Long {
             tailrec fun rec(acc: Long, power: Long, remaining: List<Int>): Long {
-                return if (remaining.isEmpty()) acc else {
+                return if (remaining.isEmpty()) {
+                    acc
+                } else {
                     rec(acc + power * remaining[0], power * base, remaining.drop(1))
                 }
             }
@@ -134,15 +146,25 @@ class Helpers {
                 }
             }
         }
+
+        fun pow(base: Int, power: Int): Int {
+            tailrec fun rec(acc: Int, remaining: Int): Int {
+                return if (remaining == 0) acc else rec(acc * base, remaining - 1)
+            }
+
+            return rec(1, power)
+        }
     }
 }
 
 tailrec fun <T> List<T?>.accumulateToGroups(
     remaining: List<T?> = this,
     current: List<T> = emptyList(),
-    acc: List<List<T>> = emptyList()
+    acc: List<List<T>> = emptyList(),
 ): List<List<T>> {
-    return if (remaining.isEmpty()) acc + listOf(current) else {
+    return if (remaining.isEmpty()) {
+        acc + listOf(current)
+    } else {
         val next = remaining.first()
         val tail = remaining.drop(1)
         if (next == null) {
@@ -157,7 +179,8 @@ enum class Facing(val vector: Point) {
     LEFT(Point(-1, 0)),
     RIGHT(Point(1, 0)),
     UP(Point(0, -1)),
-    DOWN(Point(0, 1));
+    DOWN(Point(0, 1)),
+    ;
 
     fun turnLeft(): Facing = when (this) {
         LEFT -> DOWN

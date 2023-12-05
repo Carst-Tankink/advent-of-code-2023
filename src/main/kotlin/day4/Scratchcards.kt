@@ -1,5 +1,6 @@
 package day4
 
+import util.Helpers
 import util.Solution
 
 data class Scratchcard(
@@ -17,20 +18,18 @@ class Scratchcards(fileName: String?) : Solution<Scratchcard, Int>(fileName) {
     }
 
     override fun solve1(data: List<Scratchcard>): Int {
-        return data.sumOf {
-            score(it)
-        }
+        return data
+            .map { score(it) }
+            .sumOf { scoringNumbers -> if (scoringNumbers > 0) Helpers.pow(2, scoringNumbers - 1) else 0 }
     }
 
     private fun score(card: Scratchcard): Int {
-        return card.foundNumbers.fold(1) { acc, number ->
-            if (number in card.winningNumbers) acc * 2 else acc
-        } / 2
+        return (card.foundNumbers intersect card.winningNumbers.toSet()).size
     }
 
     override fun solve2(data: List<Scratchcard>): Int {
         return data.foldIndexed(List(data.size) { 1 }) { index, acc, card ->
-            val score = (card.foundNumbers intersect card.winningNumbers.toSet()).size
+            val score = score(card)
             val copies = acc[index]
             val wonCards = index + 1..index + score
             acc.mapIndexed { idx, v ->
