@@ -101,7 +101,7 @@ fun List<MapLine>.lookupRange(entry: Range): List<Range> {
         return if (todo.isEmpty() || e == null) {
             acc + listOfNotNull(e)
         } else {
-            val (f, m, l) = splitLine(e, todo.first())
+            val (f, m, l) = splitRanges(e, todo.first())
             rec(todo.drop(1), acc + listOfNotNull(f, m?.plus(todo.first().offset)), l)
         }
     }
@@ -109,7 +109,7 @@ fun List<MapLine>.lookupRange(entry: Range): List<Range> {
     return rec(this, emptyList(), entry)
 }
 
-fun splitLine(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
+fun splitRanges(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
     val source = line.sourceRange
     return when {
         entry.second <= source.first -> Triple(entry, null, null)
