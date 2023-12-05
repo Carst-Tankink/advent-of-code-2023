@@ -47,33 +47,16 @@ class IfYouGiveASeedAFertilizer(fileName: String?) : Solution<AlmanacLine, Long>
     override fun solve1(data: List<AlmanacLine>): Long {
         val maps = buildMaps(emptyMap(), data.drop(2), null)
         return (data.first() as SeedsLine).seeds.minOf {
-            locationForSeeds(it, maps)
+            locationsForSeeds(it to it + 1, maps)
+                .minOf { r -> r.first }
         }
     }
 
     override fun solve2(data: List<AlmanacLine>): Long {
         val seeds = expandSeedsToRanges(data.first() as SeedsLine)
-
         val maps = buildMaps(emptyMap(), data.drop(2), null)
-        val locations = seeds.flatMap { seed ->
-            maps[MapType.SEED_TO_SOIL]!!.lookupRange(seed)
-                .flatMap { maps[MapType.SOIL_TO_FERTILIZER]!!.lookupRange(it) }
-                .flatMap { maps[MapType.FERTILIZER_TO_WATER]!!.lookupRange(it) }
-                .flatMap { maps[MapType.WATER_TO_LIGHT]!!.lookupRange(it) }
-                .flatMap { maps[MapType.LIGHT_TO_TEMPERATURE]!!.lookupRange(it) }
-                .flatMap { maps[MapType.TEMPERATURE_TO_HUMIDITY]!!.lookupRange(it) }
-                .flatMap { maps[MapType.HUMIDITY_TO_LOCATION]!!.lookupRange(it) }
-        }.sortedBy { it.first }
-        return seeds.minOf { seed ->
-            val ranges = maps[MapType.SEED_TO_SOIL]!!.lookupRange(seed)
-                .flatMap { maps[MapType.SOIL_TO_FERTILIZER]!!.lookupRange(it) }
-                .flatMap { maps[MapType.FERTILIZER_TO_WATER]!!.lookupRange(it) }
-                .flatMap { maps[MapType.WATER_TO_LIGHT]!!.lookupRange(it) }
-                .flatMap { maps[MapType.LIGHT_TO_TEMPERATURE]!!.lookupRange(it) }
-                .flatMap { maps[MapType.TEMPERATURE_TO_HUMIDITY]!!.lookupRange(it) }
-                .flatMap { maps[MapType.HUMIDITY_TO_LOCATION]!!.lookupRange(it) }
-            ranges.minOf { it.first }
-        }
+        return seeds
+            .minOf { seed -> locationsForSeeds(seed, maps).minOf { it.first } }
     }
 
     private fun expandSeedsToRanges(seedsLine: SeedsLine): List<Range> {
@@ -102,25 +85,15 @@ class IfYouGiveASeedAFertilizer(fileName: String?) : Solution<AlmanacLine, Long>
         }
     }
 
-    private fun locationForSeeds(seed: Long, maps: Map<MapType, List<MapLine>>): Long {
-        return maps[MapType.SEED_TO_SOIL]!!.lookupRange(Pair(seed, seed))
+    private fun locationsForSeeds(seed: Range, maps: Map<MapType, List<MapLine>>): List<Range> {
+        return maps[MapType.SEED_TO_SOIL]!!.lookupRange(seed)
             .flatMap { maps[MapType.SOIL_TO_FERTILIZER]!!.lookupRange(it) }
             .flatMap { maps[MapType.FERTILIZER_TO_WATER]!!.lookupRange(it) }
             .flatMap { maps[MapType.WATER_TO_LIGHT]!!.lookupRange(it) }
             .flatMap { maps[MapType.LIGHT_TO_TEMPERATURE]!!.lookupRange(it) }
             .flatMap { maps[MapType.TEMPERATURE_TO_HUMIDITY]!!.lookupRange(it) }
             .flatMap { maps[MapType.HUMIDITY_TO_LOCATION]!!.lookupRange(it) }
-            .first().first
     }
-}
-
-fun List<MapLine>.lookup(entry: Long): Long {
-    fun lookupEntry(line: MapLine): Long? {
-        val delta = line.offset
-        return if (entry >= line.sourceRange.first && entry < line.sourceRange.second) entry + delta else null
-    }
-
-    return this.firstNotNullOfOrNull { lookupEntry(it) } ?: entry
 }
 
 fun List<MapLine>.lookupRange(entry: Range): List<Range> {
@@ -128,36 +101,35 @@ fun List<MapLine>.lookupRange(entry: Range): List<Range> {
         return if (todo.isEmpty() || e == null) {
             acc + listOfNotNull(e)
         } else {
-            val firstLine = todo.first()
-            val (f, m, l) = mapSingleLine(e, firstLine)
-            rec(todo.drop(1), acc + listOfNotNull(f, m), l)
+            val (f, m, l) = splitLine(e, todo.first())
+            rec(todo.drop(1), acc + listOfNotNull(f, m?.plus(todo.first().offset)), l)
         }
     }
 
     return rec(this, emptyList(), entry)
 }
 
-fun mapSingleLine(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
+fun splitLine(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
     val source = line.sourceRange
     return when {
         entry.second <= source.first -> Triple(entry, null, null)
         entry.first >= source.second -> Triple(null, null, entry)
         entry.first >= source.first && entry.second <= source.second -> Triple(
             null,
-            entry + line.offset,
+            entry,
             null,
         )
 
         entry.first >= source.first && entry.second > source.second -> Triple(
             null,
-            Pair(entry.first, source.second) + line.offset,
-            Pair(source.second, entry.second),
+            entry.first to source.second,
+            source.second to entry.second,
         )
 
         entry.second > source.first && entry.second <= source.second -> {
             Triple(
                 entry.first to source.first,
-                (source.first to entry.second) + line.offset,
+                source.first to entry.second,
                 null,
             )
         }
@@ -166,4 +138,4 @@ fun mapSingleLine(entry: Range, line: MapLine): Triple<Range?, Range?, Range?> {
     }
 }
 
-operator fun Pair<Long, Long>.plus(offset: Long): Pair<Long, Long> = Pair(this.first + offset, this.second + offset)
+fun Pair<Long, Long>.plus(offset: Long): Pair<Long, Long> = this.first + offset to this.second + offset
