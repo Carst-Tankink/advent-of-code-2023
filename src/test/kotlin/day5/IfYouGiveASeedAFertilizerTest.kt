@@ -15,27 +15,32 @@ class IfYouGiveASeedAFertilizerTest {
     @Test
     fun testRangeSplits() {
         val entry: Pair<Long, Long> = 100L to 104L
-        val fullyBefore = splitRanges(entry, MapLine(104L to 103, 1))
+        val source4 = MapLine(104L to 103, 1)
+        val fullyBefore = splitRanges(entry, source4.sourceRange)
         assertEquals(entry, fullyBefore.first)
         assertNull(fullyBefore.second)
         assertNull(fullyBefore.third)
 
-        val fullyAfter = splitRanges(entry, MapLine(99L to 100, 1))
+        val source3 = MapLine(99L to 100, 1)
+        val fullyAfter = splitRanges(entry, source3.sourceRange)
         assertEquals(entry, fullyAfter.third)
         assertNull(fullyAfter.second)
         assertNull(fullyAfter.first)
 
-        val fullyIn = splitRanges(entry, MapLine(99L to 106, 2))
+        val source2 = MapLine(99L to 106, 2)
+        val fullyIn = splitRanges(entry, source2.sourceRange)
         assertNull(fullyIn.first)
         assertEquals(100L to 104L, fullyIn.second)
         assertNull(fullyIn.third)
 
-        val overlapsStart = splitRanges(entry, MapLine(101L to 106, -20))
+        val source1 = MapLine(101L to 106, -20)
+        val overlapsStart = splitRanges(entry, source1.sourceRange)
         assertEquals(100L to 101L, overlapsStart.first)
         assertEquals(101L to 104L, overlapsStart.second)
         assertNull(overlapsStart.third)
 
-        val overlapsEnd = splitRanges(entry, MapLine(99L to 101L, 10))
+        val source = MapLine(99L to 101L, 10)
+        val overlapsEnd = splitRanges(entry, source.sourceRange)
         assertNull(overlapsEnd.first)
         assertEquals(100L to 101L, overlapsEnd.second)
         assertEquals(101L to 104L, overlapsEnd.third)
