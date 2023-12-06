@@ -20,7 +20,7 @@ data object EMPTY : AlmanacLine
 typealias Range = Pair<Long, Long>
 
 class IfYouGiveASeedAFertilizer(fileName: String?) : Solution<AlmanacLine, Long>(fileName) {
-    override fun parse(line: String): AlmanacLine? {
+    override fun parse(line: String): AlmanacLine {
         val numbersRegex = """(\d+ ?)+""".toRegex()
         return when {
             line.startsWith("seeds: ") -> {
