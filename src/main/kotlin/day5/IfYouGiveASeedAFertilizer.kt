@@ -133,7 +133,7 @@ fun splitRanges(entry: Range, source: Range): Triple<Range?, Range?, Range?> {
             )
         }
 
-        else -> TODO()
+        else -> error("Unexpected range condition")
     }
 }
 
