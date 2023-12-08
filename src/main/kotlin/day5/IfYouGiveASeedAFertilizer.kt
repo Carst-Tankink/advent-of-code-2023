@@ -60,7 +60,7 @@ class IfYouGiveASeedAFertilizer(fileName: String?) : Solution<AlmanacLine, Long>
     }
 
     private fun expandSeedsToRanges(seedsLine: SeedsLine): List<Range> {
-        return seedsLine.seeds.windowed(2, 2).map { Pair(it[0], it[0] + it[1]) }
+        return seedsLine.seeds.chunked(2).map { Pair(it[0], it[0] + it[1]) }
     }
 
     private tailrec fun buildMaps(
