@@ -111,27 +111,40 @@ fun List<MapLine>.lookupRange(entry: Range): List<Range> {
 
 fun splitRanges(entry: Range, source: Range): Triple<Range?, Range?, Range?> {
     return when {
+        // Entry is fully before
         entry.second <= source.first -> Triple(entry, null, null)
-        entry.first >= source.second -> Triple(null, null, entry)
-        entry.first >= source.first && entry.second <= source.second -> Triple(
-            null,
-            entry,
-            null,
-        )
-
-        entry.first >= source.first && entry.second > source.second -> Triple(
-            null,
-            entry.first to source.second,
-            source.second to entry.second,
-        )
-
-        entry.second > source.first && entry.second <= source.second -> {
+        // Entry is partially before.
+        entry.first < source.first && entry.second > source.first && entry.second <= source.second -> {
             Triple(
                 entry.first to source.first,
                 source.first to entry.second,
                 null,
             )
         }
+
+        // Entry is contained in source.
+        entry.first >= source.first && entry.second <= source.second -> Triple(
+            null,
+            entry,
+            null,
+        )
+
+        // Entry is partially after
+        entry.first >= source.first && entry.first < source.second && entry.second > source.second -> Triple(
+            null,
+            entry.first to source.second,
+            source.second to entry.second,
+        )
+
+        // Entry is fully after
+        entry.first >= source.second -> Triple(null, null, entry)
+
+        // Source is contained in entry
+        entry.first <= source.first && entry.second >= source.second -> Triple(
+            entry.first to source.first,
+            source.first to source.second,
+            source.second to entry.second
+        )
 
         else -> error("Unexpected range condition")
     }
