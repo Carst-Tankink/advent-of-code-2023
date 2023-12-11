@@ -74,7 +74,7 @@ class PipeMaze(fileName: String?) : Solution<List<Location>, Int>(fileName) {
             val nextStepLeft = findNext(path.first(), path)
             val nextStepRight = findNext(path.last(), path)
 
-            return if (nextStepLeft == nextStepRight) Pair(steps + 1, path) else {
+            return if (nextStepLeft == nextStepRight) Pair(steps + 1, path + nextStepRight) else {
                 rec(listOf(nextStepLeft) + path + nextStepRight, steps + 1)
             }
         }
@@ -84,13 +84,44 @@ class PipeMaze(fileName: String?) : Solution<List<Location>, Int>(fileName) {
 
     override fun solve2(data: List<List<Location>>): Int {
         val map = data.toGrid()
-        val loop = findLoop(map).second
-        val start = map.entries.find { it.value == START }!!.key
-        val indexOfStart = loop.indexOf(start)
-        val normalizedLoop = loop.drop(indexOfStart) + loop.subList(0, indexOfStart)
+        val loop = findLoop(map)
 
-        TODO("Not yet implemented")
+        return (0..map.maxOf { it.key.y }).sumOf {
+            findInsidePoints(it, map, loop.second).size
+        }
     }
+
+    private fun findInsidePoints(y: Long, map: Map<Point, Location>, loop: List<Point>): Set<Point> {
+        val startIndex = loop.indexOfFirst { map[it] == START }
+
+        val startY = loop[startIndex].y
+        val startIsVertical = loop[startIndex - 1].y < startY || loop[startIndex + 1].y < startY
+
+        val verticalPieces = setOf(
+            PipePiece.VERTICAL,
+            PipePiece.L_BEND,
+            PipePiece.J_BEND
+        ) + if (startIsVertical) setOf(START) else emptySet()
+
+        tailrec fun ray(point: Point, acc: Set<Point>, inside: Boolean): Set<Point> {
+            val nextPoint = point + Point(1, 0)
+            return when (point) {
+                !in map -> acc
+                in loop -> {
+                    val piece = map[point]
+                    ray(nextPoint, acc, if (piece in verticalPieces) !inside else inside)
+                }
+
+                else -> {
+                    val newAcc = if (inside) acc + point else acc
+                    ray(nextPoint, newAcc, inside)
+                }
+            }
+        }
+
+        return ray(Point(0, y), emptySet(), false)
+    }
+
 }
 
 private operator fun Point.plus(dir: Direction): Point {
