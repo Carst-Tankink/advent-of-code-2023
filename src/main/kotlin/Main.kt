@@ -2,11 +2,10 @@ import org.reflections.Reflections
 import util.Solution
 import java.lang.reflect.Constructor
 import java.time.LocalDateTime
-import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 fun main() {
-    val day = getCurrentDay()
+    val day = getCurrentDay(10)
     solveDay(day) { s -> getConstructorOfDay(day).newInstance(s) }
 }
 
