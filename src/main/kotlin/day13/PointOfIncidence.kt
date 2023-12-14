@@ -19,20 +19,11 @@ class PointOfIncidence(fileName: String?) : Solution<List<Terrain>, Long>(fileNa
     }
 
     override fun solve1(data: List<List<Terrain>>): Long {
-        val folded = data.fold(
-            Pair(emptyList<List<List<Terrain>>>(), emptyList<List<Terrain>>())
-        ) { (acc, temp), l ->
-            if (l.isEmpty()) Pair(acc + listOf(temp), emptyList()) else Pair(acc, temp + listOf(l))
-        }
-
-
-        val groups: List<List<List<Terrain>>> = folded.first + listOf(folded.second)
-        return groups.sumOf { mirrorPosition(it) }
+        return groupFields(data).sumOf { mirrorPosition(it) }
     }
 
     private fun mirrorPosition(terrain: List<List<Terrain>>): Long {
         val horizontalMirror = findMirror(terrain)
-
         val verticalMirror = if (horizontalMirror == 0) findMirror(terrain.transpose()) else 0
 
         return verticalMirror.toLong() + 100 * horizontalMirror
@@ -46,7 +37,34 @@ class PointOfIncidence(fileName: String?) : Solution<List<Terrain>, Long>(fileNa
             before.zip(after).all { lines -> lines.first == lines.second }
         } ?: 0
 
-    override fun solve2(data: List<List<Terrain>>): Long {
-        TODO("Not yet implemented")
+    private fun groupFields(data: List<List<Terrain>>): List<List<List<Terrain>>> {
+        val folded = data.fold(
+            Pair(emptyList<List<List<Terrain>>>(), emptyList<List<Terrain>>())
+        ) { (acc, temp), l ->
+            if (l.isEmpty()) Pair(acc + listOf(temp), emptyList()) else Pair(acc, temp + listOf(l))
+        }
+
+        return folded.first + listOf(folded.second)
     }
+
+    override fun solve2(data: List<List<Terrain>>): Long {
+        return groupFields(data).sumOf { mirrorPositionWithSmudges(it) }
+
+
+    }
+
+    private fun mirrorPositionWithSmudges(field: List<List<Terrain>>): Long {
+        val horizontalMirror = findMirrorWithSmudge(field)
+        val verticalMirror = if (horizontalMirror == 0) findMirrorWithSmudge(field.transpose()) else 0
+
+        return verticalMirror.toLong() + 100 * horizontalMirror
+    }
+
+    private fun findMirrorWithSmudge(terrain: List<List<Terrain>>) =
+        (1..<terrain.size).firstOrNull {
+            val before = terrain.take(it).reversed()
+            val after = terrain.drop(it)
+
+            before.zip(after).count { (l1, l2) -> l1.zip(l2).count { (t1, t2) -> t1 != t2 } == 1 } == 1
+        } ?: 0
 }
