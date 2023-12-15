@@ -15,4 +15,10 @@ class LensLibraryTest {
     fun sample1Star1() {
         assertEquals(1320, sample1.star1())
     }
+
+    @Test
+    fun sample1Star2() {
+        assertEquals(145, sample1.star2())
+
+    }
 }
