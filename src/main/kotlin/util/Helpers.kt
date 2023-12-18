@@ -79,8 +79,6 @@ fun <T> Grid<T>.column(number: Long): Grid<T> = this.filterKeys { it.x == number
 
 class Helpers {
     companion object {
-        fun Char.intValue() = this.code - 48
-
         fun <E> List<E>.pad(height: Int, e: E? = null): List<E?> {
             return if (this.size == height) {
                 this
