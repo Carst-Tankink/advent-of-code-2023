@@ -38,13 +38,11 @@ class LavaductLagoon(fileName: String?) : Solution<DigInstruction, Long>(fileNam
 
     override fun solve1(data: List<DigInstruction>): Long {
         val edge: Set<Point> = getEdge(data)
-
+        println("Edge size: ${edge.size}")
         val topY = edge.minOf { it.y }
-        val topLeft = Point(edge.filter { it.y == topY }.minOf { it.x }, topY)
+        val topLine =edge.filter { it.y == topY  }
 
-        val seed = Point(topLeft.x + 1, topLeft.y + 1)
-
-        return floodFill(edge + setOf(seed), setOf(seed)).size.toLong()
+        TODO()
     }
 
     private fun getEdge(
@@ -52,44 +50,24 @@ class LavaductLagoon(fileName: String?) : Solution<DigInstruction, Long>(fileNam
     ): Set<Point> {
         val digger = Point(0, 0)
         return data.fold(Pair(setOf(digger), digger)) { (dug, digger), ins ->
-            when (ins.facing) {
-                Facing.LEFT -> {
-                    val newPosition = Point(digger.x - ins.steps, digger.y)
-                    val newPoints = (digger.x downTo newPosition.x).map { Point(it, digger.y) }
-                    Pair(dug + newPoints, newPosition)
-                }
-
-                Facing.RIGHT -> {
-                    val newPosition = Point(digger.x + ins.steps, digger.y)
-                    val newPoints = (digger.x..newPosition.x).map { Point(it, digger.y) }
-                    Pair(dug + newPoints, newPosition)
-                }
-
-                Facing.UP -> {
-                    val newPosition = Point(digger.x, digger.y - ins.steps)
-                    val newPoints = (digger.y downTo newPosition.y).map { Point(digger.x, it) }
-                    Pair(dug + newPoints, newPosition)
-                }
-
-                Facing.DOWN -> {
-                    val newPosition = Point(digger.x, digger.y + ins.steps)
-                    val newPoints = (digger.y..newPosition.y).map { Point(digger.x, it) }
-                    Pair(dug + newPoints, newPosition)
-                }
+            val newPosition = when (ins.facing) {
+                Facing.LEFT -> Point(digger.x - ins.steps, digger.y)
+                Facing.RIGHT -> Point(digger.x + ins.steps, digger.y)
+                Facing.UP -> Point(digger.x, digger.y - ins.steps)
+                Facing.DOWN -> Point(digger.x, digger.y + ins.steps)
             }
+            Pair(dug + newPosition, newPosition)
         }.first
     }
 
     override fun solve2(data: List<DigInstruction>): Long {
         val decodedInstructions = data.map { decodeInstruction(it) }
         val edge = getEdge(decodedInstructions)
-
+        println("Edge size: ${edge.size}")
         val topY = edge.minOf { it.y }
-        val topLeft = Point(edge.filter { it.y == topY }.minOf { it.x }, topY)
+        val topLine = edge.filter { it.y == topY  }
+        val square = topLine.map { p -> edge.filter { it.x == p.x } }
 
-        val seed = Point(topLeft.x + 1, topLeft.y + 1)
-
-        floodFill(edge, setOf(seed))
         TODO()
     }
 
