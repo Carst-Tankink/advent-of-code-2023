@@ -1,13 +1,15 @@
 package day19
 
 import util.Solution
+import java.lang.Integer.max
+import java.lang.Integer.min
 
 
 data class Rule(
     val target: String,
     val category: String? = null,
     val operator: Char? = null,
-    val value: Long? = null
+    val value: Int? = null
 
 ) {
     fun matches(p: Part): Boolean {
@@ -25,6 +27,15 @@ data class Rule(
             null -> true
             '<' -> categoryValue < value!!
             '>' -> categoryValue > value!!
+            else -> error("Unexpected operator $operator")
+        }
+    }
+
+    fun newCategoryRange(categoryRange: Pair<Int, Int>): Pair<Int, Int> {
+        return when (operator) {
+            null -> categoryRange
+            '<' -> Pair(categoryRange.first, min(value!! - 1, categoryRange.second))
+            '>' -> Pair(max(categoryRange.first, value!! + 1), categoryRange.second)
             else -> error("Unexpected operator $operator")
         }
     }
@@ -56,7 +67,7 @@ class APlenty(fileName: String?) : Solution<PlentyInput, Long>(fileName) {
             val (catOperator, target) = r.split(":")
             val cat = catOperator.takeWhile { it !in setOf('<', '>') }
             val op = catOperator.drop(cat.length).first()
-            val value = catOperator.drop(cat.length + 1).toLong()
+            val value = catOperator.drop(cat.length + 1).toInt()
             Rule(target, cat, op, value)
         } else {
             Rule(target = r)
@@ -84,6 +95,49 @@ class APlenty(fileName: String?) : Solution<PlentyInput, Long>(fileName) {
     }
 
     override fun solve2(data: List<PlentyInput>): Long {
-        TODO("Not yet implemented")
+        val workflows = data.filterIsInstance<Workflow>().associate { it.name to it.rules }
+        val pathsToA: List<List<String>> = findPathsToA(workflows).map { it.reversed() }
+        return pathsToA.sumOf { combinations(it, workflows) }
+    }
+
+    private fun combinations(p: List<String>, workflows: Map<String, List<Rule>>): Long {
+        val steps = p.zipWithNext { p1, p2 ->
+            workflows[p1]!!.first { it.target == p2 }
+        }
+        val initialRange = Pair(1, 4000)
+        val allowedRanges = mapOf(
+            "x" to initialRange,
+            "m" to initialRange,
+            "a" to initialRange,
+            "s" to initialRange
+        )
+
+        val finalRanges = steps.fold(allowedRanges) { acc, r ->
+            val category = r.category
+            if (category == null) acc else {
+                (acc - category) + (category to r.newCategoryRange(acc[category]!!))
+            }
+        }
+
+        return finalRanges.values.fold(1) { acc, r ->
+            acc * (r.second - r.first)
+
+        }
+    }
+
+    private fun findPathsToA(workflows: Map<String, List<Rule>>): Set<List<String>> {
+        tailrec fun rec(queue: List<List<String>>, acc: Set<List<String>>): Set<List<String>> {
+            return if (queue.isEmpty()) acc else {
+                val prefix = queue.first()
+                val rule = prefix.first()
+                val (finishedPaths, newPrefixes) = workflows[rule]!!.map {
+                    listOf(it.target) + prefix
+                }.partition { it.first() == "A" || it.first() == "R" }
+
+                rec(queue.drop(1) + newPrefixes, acc + finishedPaths.filter { it.first() == "A" })
+            }
+        }
+
+        return rec(listOf(listOf("in")), emptySet())
     }
 }
