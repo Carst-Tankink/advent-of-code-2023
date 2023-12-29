@@ -30,7 +30,7 @@ class ALongWalk(fileName: String?) : Solution<List<HikingTrail>, Long>(fileName)
     }
 
     override fun solve1(data: List<List<HikingTrail>>): Long {
-        return 0L
+        return 1
         val map = data.toGrid()
         val maxY = map.maxOf { it.key.y }
 
@@ -85,36 +85,82 @@ class ALongWalk(fileName: String?) : Solution<List<HikingTrail>, Long>(fileName)
 
     override fun solve2(data: List<List<HikingTrail>>): Long {
         val map = data.toGrid()
-        val maxY = map.maxOf { it.key.y }
 
-        val start = map.entries.find { it.key.y == 0L && it.value == HikingTrail.PATH }
-        val end = map.entries.find { it.key.y == maxY && it.value == HikingTrail.PATH }!!
+        val paths = map.filterValues { it != HikingTrail.FOREST }.keys
+        val start = paths.find { it.y == 0L }!!
 
-        tailrec fun scenicRoutes(paths: Set<List<Point>>, acc: Set<List<Point>>): Set<List<Point>> {
-            if (paths.size % 100 == 0 || paths.size < 100) {
-                println("To go: ${paths.size}, acc: ${acc.size}")
-            }
 
-            return when {
-                paths.isEmpty() -> acc
-                end.key in paths.first() -> scenicRoutes(paths.drop(1).toSet(), acc + setOf(paths.first()))
-                else -> {
-                    val first = paths.first()
-                    val currentPoint = first.first()
-                    val neighbours: Set<Point> =
-                        currentPoint.getNeighbours(true)
-                            .filter { it in map && map[it] != HikingTrail.FOREST }
-                            .toSet()
-                    val newPaths: Set<List<Point>> = neighbours
-                        .filterNot { it in first }
-                        .map { listOf(it) + first }
-                        .filter { it != first }
-                        .toSet()
-                    scenicRoutes(paths.drop(1).toSet() + newPaths, acc)
+        tailrec fun stepsToJunctions(
+            acc: Set<Pair<Set<Point>, Int>>,
+            toExplore: Set<List<Point>>,
+        ): Set<Pair<Set<Point>, Int>> {
+            return if (toExplore.isEmpty()) acc else {
+                val head = toExplore.first()
+                val tail = toExplore.drop(1).toSet()
+
+                val currentPoint = head.first()
+                val nextPoints = currentPoint
+                    .getNeighbours(true)
+                    .filter { it in paths }
+                    .filterNot { it in head }
+
+                return when (nextPoints.size) {
+                    0 -> {
+                        val edge = setOf(head.last(), currentPoint) to head.size - 1
+                        stepsToJunctions(acc + edge, tail)
+                    }
+
+                    1 -> stepsToJunctions(acc, setOf(nextPoints + head) + tail)
+
+                    else -> {
+                        val edge = setOf(head.last(), currentPoint) to head.size - 1
+
+                        if (edge !in acc) {
+                            val newPaths = nextPoints.map {
+                                listOf(it, currentPoint)
+                            }.toSet()
+                            stepsToJunctions(acc + edge, newPaths + tail)
+                        } else {
+                            stepsToJunctions(acc, tail)
+                        }
+                    }
                 }
             }
         }
 
-        return scenicRoutes(setOf(listOf(start!!.key)), emptySet()).maxOf { it.size }.toLong() - 1
+        val junctionMap = stepsToJunctions(emptySet(), setOf(listOf(start)))
+
+        val maxY = map.maxOf { it.key.y }
+        val end = paths.find { it.y == maxY }!!
+
+        tailrec fun findPathsThroughJunctions(
+            acc: Set<List<Pair<Point, Int>>>,
+            todo: Set<List<Pair<Point, Int>>>,
+        ): Set<List<Pair<Point, Int>>> {
+            return if (todo.isEmpty()) {
+                acc
+            } else {
+                val h = todo.first()
+                val t = todo.drop(1).toSet()
+
+                val c = h.first()
+                return if (c.first == end) {
+                    findPathsThroughJunctions(acc + setOf(h), t)
+                } else {
+                    val neighbours = junctionMap
+                        .filter { c.first in it.first }
+                        .map { (pos, p) -> pos.find { it != c.first }!! to p }
+                        .filterNot { it.first in h.map { p -> p.first } }
+                    val next = neighbours.map { listOf(it) + h }.toSet()
+                    findPathsThroughJunctions(acc, next + t)
+                }
+            }
+        }
+
+        val ps = findPathsThroughJunctions(
+            emptySet(),
+            setOf(listOf(start to 0))
+        )
+        return ps.maxOf { p -> p.sumOf { it.second.toLong() } }
     }
 }
