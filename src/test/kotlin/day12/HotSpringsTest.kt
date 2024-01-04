@@ -14,27 +14,11 @@ class HotSpringsTest {
     @Test
     fun testStates() {
         val subject = HotSprings(null)
-        //?###????????
-        val state = State(
-            listOf(
-                SpringCondition.UNKNOWN,
-                SpringCondition.DAMAGED,
-                SpringCondition.DAMAGED,
-                SpringCondition.DAMAGED,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-                SpringCondition.UNKNOWN,
-            ),
-            listOf(3, 2, 1),
-            emptyList()
-        )
-        val computeSolutions = subject.computeSolutions(state)
+        val state = State(subject.parseLine("?###????????"), listOf(3, 2, 1))
+        val computeSolutions = subject.computeSolutions(listOf(state), emptySet())
         assertEquals(10, computeSolutions.size)
 
     }
+
+
 }

@@ -11,10 +11,37 @@ enum class SpringCondition {
 data class State(
     val configuration: List<SpringCondition>,
     val checksums: List<Int>,
-    val fullConfiguration: List<SpringCondition>
 ) {
     fun isSolved(): Boolean {
-        return configuration.none { it == SpringCondition.UNKNOWN } && checksums.isEmpty()
+        tailrec fun checkSolution(conditions: List<SpringCondition>, checks: List<Int>): Boolean {
+            return when {
+                conditions.isEmpty() && checks.isEmpty() -> true
+                conditions.any {  it == SpringCondition.DAMAGED} && checks.isEmpty() -> false
+                conditions.isEmpty() && checks.isNotEmpty() -> false
+                else -> {
+                    val firstCondition = conditions.first()
+
+                    if (firstCondition == SpringCondition.OPERATIONAL) {
+                        checkSolution(conditions.drop(1), checks)
+                    } else {
+                        val firstCheck = checks.first()
+                        if (conditions.take(firstCheck).count { it == SpringCondition.DAMAGED } == firstCheck) {
+                            val afterConditions = conditions.drop(firstCheck)
+                            if (afterConditions.isEmpty() || afterConditions.first() == SpringCondition.OPERATIONAL) {
+                                checkSolution(afterConditions, checks.drop(1))
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    }
+
+                }
+            }
+
+        }
+        return checkSolution(configuration, checksums)
     }
 }
 
@@ -23,79 +50,49 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
         val (springConditions, checksums) = line.split(" ")
 
         return Pair(
-            springConditions.map {
-                when (it) {
-                    '.' -> SpringCondition.OPERATIONAL
-                    '#' -> SpringCondition.DAMAGED
-                    '?' -> SpringCondition.UNKNOWN
-                    else -> error("Unexpected Spring condition $it")
-                }
-            },
+            parseLine(springConditions),
             checksums.split(",").map { it.toInt() }
         )
     }
 
+    fun parseLine(springConditions: String) = springConditions.map {
+        when (it) {
+            '.' -> SpringCondition.OPERATIONAL
+            '#' -> SpringCondition.DAMAGED
+            '?' -> SpringCondition.UNKNOWN
+            else -> error("Unexpected Spring condition $it")
+        }
+    }
+
     override fun solve1(data: List<Pair<List<SpringCondition>, List<Int>>>): Long {
         return data.sumOf {
-            val solutions = computeSolutions(State(it.first, it.second, emptyList()))
+            val solutions = computeSolutions(listOf(State(it.first, it.second)), emptySet())
             solutions.size.toLong()
         }
     }
 
+    tailrec fun computeSolutions(configurations: List<State>, acc: Set<State>): Set<List<SpringCondition>> {
+        return if (configurations.isEmpty()) acc.map { it.configuration }.toSet() else {
+            val head = configurations.first()
+            val tail = configurations.drop(1)
 
-    private fun computeNextStates(state: State): Set<State> {
-        val configuration = state.configuration
-        val checksums = state.checksums
-        return if ((checksums.isEmpty() || configuration.isEmpty()) && !state.isSolved()) emptySet() else {
-            when (val hd = configuration.first()) {
-                SpringCondition.OPERATIONAL -> setOf(
-                    State(
-                        configuration.drop(1),
-                        checksums,
-                        state.fullConfiguration + hd
-                    )
-                )
-
-                SpringCondition.DAMAGED -> {
-                    val sequence = configuration.take(checksums.first())
-                    val nextConfig = configuration.drop(checksums.first())
-                    if (sequence.all { it == SpringCondition.DAMAGED || it == SpringCondition.UNKNOWN } && (nextConfig.isEmpty() || nextConfig.first() == SpringCondition.OPERATIONAL || nextConfig.first() == SpringCondition.UNKNOWN)) {
-                        setOf(
-                            State(
-                                nextConfig.drop(1),
-                                checksums.drop(1),
-                                state.fullConfiguration + List(checksums.first()) { SpringCondition.DAMAGED } + if (nextConfig.isNotEmpty()) listOf(
-                                    SpringCondition.OPERATIONAL
-                                ) else emptyList()
-                            )
-                        )
-                    } else {
-                        emptySet()
+            val configuration = head.configuration
+            val isComplete = configuration.none { it == SpringCondition.UNKNOWN }
+            val (nextStates: List<State>, solutions: Set<State>) = if (isComplete) Pair(
+                emptyList<State>(),
+                if (head.isSolved()) setOf(head) else emptySet()
+            ) else {
+                val idx = configuration.indexOf(SpringCondition.UNKNOWN)
+                val replacements: List<State> =
+                    setOf(SpringCondition.DAMAGED, SpringCondition.OPERATIONAL).map { newCondition ->
+                        configuration.mapIndexed { i, s -> if (i == idx) newCondition else s }
+                    }.map {
+                        State(it, head.checksums)
                     }
-                }
-
-                SpringCondition.UNKNOWN -> {
-                    setOf(
-                        State(
-                            listOf(SpringCondition.DAMAGED) + configuration.drop(1),
-                            checksums,
-                            listOf(SpringCondition.DAMAGED) + state.fullConfiguration.drop(1)
-                        ),
-                        State(
-                            listOf(SpringCondition.OPERATIONAL) + configuration.drop(1),
-                            checksums,
-                            listOf(SpringCondition.OPERATIONAL) + state.fullConfiguration.drop(1)
-                        )
-                    )
-                }
+                Pair(replacements, emptySet())
             }
-        }
-    }
 
-    fun computeSolutions(state: State): Set<List<SpringCondition>> {
-        return if (state.isSolved()) setOf(state.fullConfiguration) else {
-            val nextStates = computeNextStates(state)
-            nextStates.flatMap { computeSolutions(it) }.toSet()
+            computeSolutions(nextStates + tail, solutions + acc)
         }
     }
 
