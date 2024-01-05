@@ -15,8 +15,8 @@ class HotSpringsTest {
     fun testStates() {
         val subject = HotSprings(null)
         val state = State(subject.parseLine("?###????????"), listOf(3, 2, 1))
-        val computeSolutions = subject.computeSolutions(listOf(state), emptySet())
-        assertEquals(10, computeSolutions.size)
+        val computeSolutions = subject.computeSolutions(listOf(state), 0)
+        assertEquals(10, computeSolutions)
 
     }
 
