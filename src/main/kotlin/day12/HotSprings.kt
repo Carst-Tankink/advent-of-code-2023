@@ -12,37 +12,6 @@ data class State(
     val configuration: List<SpringCondition>,
     val checksums: List<Int>,
 ) {
-    fun isSolved(): Boolean {
-        tailrec fun checkSolution(conditions: List<SpringCondition>, checks: List<Int>): Boolean {
-            return when {
-                conditions.isEmpty() && checks.isEmpty() -> true
-                conditions.any { it == SpringCondition.DAMAGED } && checks.isEmpty() -> false
-                conditions.isEmpty() && checks.isNotEmpty() -> false
-                else -> {
-                    val firstCondition = conditions.first()
-
-                    if (firstCondition == SpringCondition.OPERATIONAL) {
-                        checkSolution(conditions.drop(1), checks)
-                    } else {
-                        val firstCheck = checks.first()
-                        if (conditions.take(firstCheck).count { it == SpringCondition.DAMAGED } == firstCheck) {
-                            val afterConditions = conditions.drop(firstCheck)
-                            if (afterConditions.isEmpty() || afterConditions.first() == SpringCondition.OPERATIONAL) {
-                                checkSolution(afterConditions, checks.drop(1))
-                            } else {
-                                false
-                            }
-                        } else {
-                            false
-                        }
-                    }
-
-                }
-            }
-
-        }
-        return checkSolution(configuration, checksums)
-    }
 }
 
 class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<Int>>, Long>(fileName) {
@@ -50,48 +19,72 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
         val (springConditions, checksums) = line.split(" ")
 
         return Pair(
-            parseLine(springConditions),
+            springConditions.map {
+                when (it) {
+                    '.' -> SpringCondition.OPERATIONAL
+                    '#' -> SpringCondition.DAMAGED
+                    '?' -> SpringCondition.UNKNOWN
+                    else -> error("Unexpected Spring condition $it")
+                }
+            },
             checksums.split(",").map { it.toInt() }
         )
     }
 
-    fun parseLine(springConditions: String) = springConditions.map {
-        when (it) {
-            '.' -> SpringCondition.OPERATIONAL
-            '#' -> SpringCondition.DAMAGED
-            '?' -> SpringCondition.UNKNOWN
-            else -> error("Unexpected Spring condition $it")
-        }
-    }
-
     override fun solve1(data: List<Pair<List<SpringCondition>, List<Int>>>): Long {
         return data.sumOf {
-            computeSolutions(listOf(State(it.first, it.second)), 0)
+            computePruning(listOf(State(it.first, it.second)), 0)
         }
     }
 
-    tailrec fun computeSolutions(configurations: List<State>, count: Long): Long {
+    private tailrec fun computePruning(configurations: List<State>, count: Long): Long {
         return if (configurations.isEmpty()) count else {
-            val head = configurations.first()
+            val (conf, clues) = configurations.first()
             val tail = configurations.drop(1)
 
-            val configuration = head.configuration
-            val isComplete = configuration.none { it == SpringCondition.UNKNOWN }
-            val (nextStates: List<State>, extra: Long) = if (isComplete) Pair(
-                emptyList(),
-                if (head.isSolved()) 1L else 0L
-            ) else {
-                val idx = configuration.indexOf(SpringCondition.UNKNOWN)
-                val replacements: List<State> =
-                    setOf(SpringCondition.DAMAGED, SpringCondition.OPERATIONAL).map { newCondition ->
-                        configuration.mapIndexed { i, s -> if (i == idx) newCondition else s }
-                    }.map {
-                        State(it, head.checksums)
-                    }
-                Pair(replacements, 0L)
-            }
+            when {
+                clues.isEmpty() && conf.all { it == SpringCondition.OPERATIONAL || it == SpringCondition.UNKNOWN } -> computePruning(
+                    tail,
+                    count + 1
+                )
 
-            computeSolutions(nextStates + tail, count + extra)
+                clues.isEmpty() && conf.any { it == SpringCondition.DAMAGED } -> computePruning(tail, count)
+                conf.all { it == SpringCondition.OPERATIONAL } && clues.isNotEmpty() -> computePruning(tail, count)
+                else -> {
+                    val interesting = conf.dropWhile { it == SpringCondition.OPERATIONAL }
+
+                    when (interesting.first()) {
+                        SpringCondition.DAMAGED -> {
+                            val nextClue = clues.first()
+                            val allDamaged = interesting.take(nextClue)
+                            val after = interesting.drop(nextClue)
+                            val nextUpOperational = after.isEmpty() ||
+                                    after.first() in setOf(SpringCondition.OPERATIONAL, SpringCondition.UNKNOWN)
+                            val isSolution =
+                                allDamaged.count { it == SpringCondition.DAMAGED || it == SpringCondition.UNKNOWN } == nextClue &&
+                                        nextUpOperational
+
+                            val nextState = if (isSolution) listOf(State(after.drop(1), clues.drop(1))) else emptyList()
+
+                            computePruning(nextState + tail, count)
+                        }
+
+                        SpringCondition.UNKNOWN -> {
+                            val remainingConf = interesting.drop(1)
+                            val nextConfs = listOf(
+                                listOf(SpringCondition.OPERATIONAL) + remainingConf,
+                                listOf(SpringCondition.DAMAGED) + remainingConf
+                            )
+
+                            computePruning(nextConfs.map { State(it, clues) } + tail, count)
+                        }
+
+                        SpringCondition.OPERATIONAL -> {
+                            error("Unexpected operation state (should have been dropped")
+                        }
+                    }
+                }
+            }
         }
     }
 
