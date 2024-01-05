@@ -16,7 +16,7 @@ data class State(
         tailrec fun checkSolution(conditions: List<SpringCondition>, checks: List<Int>): Boolean {
             return when {
                 conditions.isEmpty() && checks.isEmpty() -> true
-                conditions.any {  it == SpringCondition.DAMAGED} && checks.isEmpty() -> false
+                conditions.any { it == SpringCondition.DAMAGED } && checks.isEmpty() -> false
                 conditions.isEmpty() && checks.isNotEmpty() -> false
                 else -> {
                     val firstCondition = conditions.first()
@@ -66,21 +66,20 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
 
     override fun solve1(data: List<Pair<List<SpringCondition>, List<Int>>>): Long {
         return data.sumOf {
-            val solutions = computeSolutions(listOf(State(it.first, it.second)), emptySet())
-            solutions.size.toLong()
+            computeSolutions(listOf(State(it.first, it.second)), 0)
         }
     }
 
-    tailrec fun computeSolutions(configurations: List<State>, acc: Set<State>): Set<List<SpringCondition>> {
-        return if (configurations.isEmpty()) acc.map { it.configuration }.toSet() else {
+    tailrec fun computeSolutions(configurations: List<State>, count: Long): Long {
+        return if (configurations.isEmpty()) count else {
             val head = configurations.first()
             val tail = configurations.drop(1)
 
             val configuration = head.configuration
             val isComplete = configuration.none { it == SpringCondition.UNKNOWN }
-            val (nextStates: List<State>, solutions: Set<State>) = if (isComplete) Pair(
-                emptyList<State>(),
-                if (head.isSolved()) setOf(head) else emptySet()
+            val (nextStates: List<State>, extra: Long) = if (isComplete) Pair(
+                emptyList(),
+                if (head.isSolved()) 1L else 0L
             ) else {
                 val idx = configuration.indexOf(SpringCondition.UNKNOWN)
                 val replacements: List<State> =
@@ -89,10 +88,10 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
                     }.map {
                         State(it, head.checksums)
                     }
-                Pair(replacements, emptySet())
+                Pair(replacements, 0L)
             }
 
-            computeSolutions(nextStates + tail, solutions + acc)
+            computeSolutions(nextStates + tail, count + extra)
         }
     }
 
