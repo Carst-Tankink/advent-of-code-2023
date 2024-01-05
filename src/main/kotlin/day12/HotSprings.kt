@@ -11,8 +11,7 @@ enum class SpringCondition {
 data class State(
     val configuration: List<SpringCondition>,
     val checksums: List<Int>,
-) {
-}
+)
 
 class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<Int>>, Long>(fileName) {
     override fun parse(line: String): Pair<List<SpringCondition>, List<Int>> {
