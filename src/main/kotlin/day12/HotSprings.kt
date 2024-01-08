@@ -36,6 +36,17 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
         }
     }
 
+    override fun solve2(data: List<Pair<List<SpringCondition>, List<Int>>>): Long {
+        return data.map { (conditions, clues) ->
+            val newConditions = conditions + SpringCondition.UNKNOWN
+            Pair(
+                List(newConditions.size * 5) { newConditions[it % newConditions.size] }.dropLast(1),
+                List(clues.size * 5) { clues[it % clues.size] }
+            )
+        }.sumOf { computePruning(listOf(State(it.first, it.second)), 0) }
+    }
+
+
     private tailrec fun computePruning(configurations: List<State>, count: Long): Long {
         return if (configurations.isEmpty()) count else {
             val (conf, clues) = configurations.first()
@@ -71,7 +82,7 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
                         SpringCondition.UNKNOWN -> {
                             val remainingConf = interesting.drop(1)
                             val nextConfs = listOf(
-                                listOf(SpringCondition.OPERATIONAL) + remainingConf,
+                                remainingConf,
                                 listOf(SpringCondition.DAMAGED) + remainingConf
                             )
 
@@ -85,10 +96,5 @@ class HotSprings(fileName: String?) : Solution<Pair<List<SpringCondition>, List<
                 }
             }
         }
-    }
-
-
-    override fun solve2(data: List<Pair<List<SpringCondition>, List<Int>>>): Long {
-        TODO("Not yet implemented")
     }
 }
