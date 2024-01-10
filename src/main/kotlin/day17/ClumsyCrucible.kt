@@ -18,6 +18,27 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
     }
 
     override fun solve1(data: List<List<Int>>): Long {
+        return findMinimalHeat(data) { s ->
+            val turns = setOf(s.direction.turnRight(), s.direction.turnLeft())
+                .map { CrucibleState(s.point + it.vector, 1, it) }
+            val forward = if (s.consecutive < 3) s.copy(
+                point = s.point + s.direction.vector,
+                consecutive = s.consecutive + 1
+            ) else null
+            (turns + forward).filterNotNull<CrucibleState>()
+        }
+    }
+
+    override fun solve2(data: List<List<Int>>): Long {
+        return findMinimalHeat(data) {
+            when {
+                else -> TODO()
+            }
+
+        }
+    }
+
+    private fun findMinimalHeat(data: List<List<Int>>, computeNextState: (CrucibleState) -> List<CrucibleState>): Long {
         val grid = data.toGrid()
 
         val startState = CrucibleState(
@@ -37,14 +58,7 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
             val first = todo.minBy { distanceMap[it] ?: Long.MAX_VALUE }
             if (first.point == end) return distanceMap[first]!! else {
                 todo.remove(first)
-                val turns = setOf(first.direction.turnRight(), first.direction.turnLeft())
-                    .map { CrucibleState(first.point + it.vector, 1, it) }
-                val forward = if (first.consecutive < 3) first.copy(
-                    point = first.point + first.direction.vector,
-                    consecutive = first.consecutive + 1
-                ) else null
-
-                val newStates = (turns + forward).filterNotNull()
+                val newStates = computeNextState(first)
                     .filter { it.point in grid }
                     .filter { it !in visited }
 
@@ -61,9 +75,5 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
         }
 
         return distanceMap.filterKeys { it.point == end }.minOf { it.value }
-    }
-
-    override fun solve2(data: List<List<Int>>): Long {
-        TODO("Not yet implemented")
     }
 }
