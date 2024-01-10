@@ -6,11 +6,10 @@ import util.Point
 import util.Solution
 
 
-data class DijkstraNode(
+data class CrucibleState(
     val point: Point,
     val consecutive: Int,
     val direction: Facing,
-    val heat: Long
 )
 
 class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
@@ -20,44 +19,48 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
 
     override fun solve1(data: List<List<Int>>): Long {
         val grid = data.toGrid()
-        val finalPoint = Point(grid.keys.maxOf { it.x }, grid.keys.maxOf { it.y })
 
-        val startNode = DijkstraNode(Point(0, 0), 0, Facing.RIGHT, 0)
-        val queue: MutableSet<DijkstraNode> = mutableSetOf(startNode)
-        val visited: MutableSet<Point> = mutableSetOf()
-        while (queue.isNotEmpty() && queue.none { it.point == finalPoint }) {
-            if (visited.size % 1_000 == 0) {
-                println("Visited size: ${visited.size}")
-            }
-            val next = queue.minBy { it.heat }
-            val neighbours = Facing.entries
-                .asSequence()
-                .filter { it != next.direction.turnRight().turnRight() }
-                .mapNotNull {
+        val startState = CrucibleState(
+            Point(0, 0),
+            0,
+            Facing.RIGHT
+        )
 
-                    val point = next.point + it.vector
-                    if (point !in grid) null else {
-                        DijkstraNode(
-                            point,
-                            if (it == next.direction) next.consecutive + 1 else 1,
-                            it,
-                            next.heat + grid[point]!!
-                        )
-                    }
+        val end = Point(grid.maxOf { it.key.x }, grid.maxOf { it.key.y })
+
+        val todo: MutableSet<CrucibleState> = mutableSetOf(startState)
+        val visited: MutableSet<CrucibleState> = mutableSetOf()
+        val distanceMap: MutableMap<CrucibleState, Long> = mutableMapOf()
+        distanceMap[startState] = 0L
+
+        while (todo.isNotEmpty()) {
+            val first = todo.minBy { distanceMap[it] ?: Long.MAX_VALUE }
+            if (first.point == end) return distanceMap[first]!! else {
+                todo.remove(first)
+                val turns = setOf(first.direction.turnRight(), first.direction.turnLeft())
+                    .map { CrucibleState(first.point + it.vector, 1, it) }
+                val forward = if (first.consecutive < 3) first.copy(
+                    point = first.point + first.direction.vector,
+                    consecutive = first.consecutive + 1
+                ) else null
+
+                val newStates = (turns + forward).filterNotNull()
+                    .filter { it.point in grid }
+                    .filter { it !in visited }
+
+                newStates.forEach {
+                    val current = distanceMap[it] ?: Long.MAX_VALUE
+                    distanceMap[it] = minOf(current, distanceMap[first]!! + grid[it.point]!!)
                 }
-                .filter { it.consecutive <= 3 }
-                .filter { it.point !in visited  }
-                .toList()
 
 
-            queue.remove(next)
-            queue.addAll(neighbours)
+                todo.addAll(newStates)
+                visited.add(first)
 
-            visited.add(next.point)
+            }
         }
 
-
-        return queue.first { it.point == finalPoint }.heat
+        return distanceMap.filterKeys { it.point == end }.minOf { it.value }
     }
 
     override fun solve2(data: List<List<Int>>): Long {
