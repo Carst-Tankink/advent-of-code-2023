@@ -26,7 +26,7 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
                 point = s.point + s.direction.vector,
                 consecutive = s.consecutive + 1
             ) else null
-            (turns + forward).filterNotNull<CrucibleState>()
+            (turns + forward).filterNotNull()
         }
     }
 
