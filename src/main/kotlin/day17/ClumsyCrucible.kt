@@ -18,9 +18,10 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
     }
 
     override fun solve1(data: List<List<Int>>): Long {
-        return findMinimalHeat(data) { s ->
-            val turns = setOf(s.direction.turnRight(), s.direction.turnLeft())
-                .map { CrucibleState(s.point + it.vector, 1, it) }
+        val grid = data.toGrid()
+        val end = Point(grid.maxOf { it.key.x }, grid.maxOf { it.key.y })
+        return findMinimalHeat(data, { p -> p.point == end }) { s ->
+            val turns = turnCrucible(s)
             val forward = if (s.consecutive < 3) s.copy(
                 point = s.point + s.direction.vector,
                 consecutive = s.consecutive + 1
@@ -29,16 +30,26 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
         }
     }
 
-    override fun solve2(data: List<List<Int>>): Long {
-        return findMinimalHeat(data) {
-            when {
-                else -> TODO()
-            }
+    private fun turnCrucible(s: CrucibleState) = setOf(s.direction.turnRight(), s.direction.turnLeft())
+        .map { CrucibleState(s.point + it.vector, 1, it) }
 
+    override fun solve2(data: List<List<Int>>): Long {
+        val grid = data.toGrid()
+        val end = Point(grid.maxOf { it.key.x }, grid.maxOf { it.key.y })
+        return findMinimalHeat(data, { p -> p.point == end && p.consecutive >= 4 }) { s ->
+            val turns = if (s.consecutive >= 4 || s.consecutive == 0) turnCrucible(s) else emptyList()
+            val straight = if (s.consecutive < 10) listOf(
+                CrucibleState(s.point + s.direction.vector, s.consecutive + 1, s.direction)
+            ) else emptyList()
+            turns + straight
         }
     }
 
-    private fun findMinimalHeat(data: List<List<Int>>, computeNextState: (CrucibleState) -> List<CrucibleState>): Long {
+    private fun findMinimalHeat(
+        data: List<List<Int>>,
+        stopCondition: (CrucibleState) -> Boolean,
+        computeNextState: (CrucibleState) -> List<CrucibleState>
+    ): Long {
         val grid = data.toGrid()
 
         val startState = CrucibleState(
@@ -47,7 +58,7 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
             Facing.RIGHT
         )
 
-        val end = Point(grid.maxOf { it.key.x }, grid.maxOf { it.key.y })
+        Point(grid.maxOf { it.key.x }, grid.maxOf { it.key.y })
 
         val todo: MutableSet<CrucibleState> = mutableSetOf(startState)
         val visited: MutableSet<CrucibleState> = mutableSetOf()
@@ -56,7 +67,7 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
 
         while (todo.isNotEmpty()) {
             val first = todo.minBy { distanceMap[it] ?: Long.MAX_VALUE }
-            if (first.point == end) return distanceMap[first]!! else {
+            if (stopCondition(first)) return distanceMap[first]!! else {
                 todo.remove(first)
                 val newStates = computeNextState(first)
                     .filter { it.point in grid }
@@ -74,6 +85,7 @@ class ClumsyCrucible(fileName: String?) : Solution<List<Int>, Long>(fileName) {
             }
         }
 
-        return distanceMap.filterKeys { it.point == end }.minOf { it.value }
+        return distanceMap.filterKeys { stopCondition(it) }.minOf { it.value }
     }
+
 }
